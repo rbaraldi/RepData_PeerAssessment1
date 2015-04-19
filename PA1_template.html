@@ -1,0 +1,66 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Untitled Document.md</title><style></style></head><body>
+<h1 id="reproducible-research-peer-assessment-1">Reproducible Research: Peer Assessment 1</h1>
+<h2 id="loading-and-preprocessing-the-data">Loading and preprocessing the data</h2>
+<p>```{r loaddata}
+unzip(zipfile=&quot;activity.zip&quot;)
+activity &lt;- read.csv(&quot;activity.csv&quot;, colClasses = c(&quot;numeric&quot;, &quot;character&quot;, &quot;numeric&quot;))</p>
+<pre><code>
+## What is mean total number of steps taken per day?
+```{r}
+library(ggplot2)
+total.steps &lt;- tapply(activity$steps, activity$date, FUN=sum, na.rm=TRUE)
+qplot(total.steps, binwidth=1000, xlab=&quot;total number of steps taken each day&quot;)
+mean(total.steps, na.rm=TRUE)
+median(total.steps, na.rm=TRUE)
+</code></pre><h2 id="what-is-the-average-daily-activity-pattern-">What is the average daily activity pattern?</h2>
+<pre><code class="lang-{r}">library(ggplot2)
+averages &lt;- aggregate(x=list(steps=activity$steps), by=list(interval=activity$interval),
+                      FUN=mean, na.rm=TRUE)
+ggplot(activity=averages, aes(x=interval, y=steps)) + geom_line() + xlab(&quot;5-minute interval&quot;) + ylab(&quot;average number of steps taken&quot;)
+</code></pre>
+<p>On average across all the days in the dataset, the 5-minute interval contains
+the maximum number of steps?</p>
+<pre><code class="lang-{r}">averages[which.max(averages$steps),]
+</code></pre>
+<h2 id="imputing-missing-values">Imputing missing values</h2>
+<p>```{r how_many_missing}
+missing &lt;- is.na(data$steps)</p>
+<p>table(missing)</p>
+<pre><code>
+```{r}
+fill.value &lt;- function(steps, interval) {
+    filled &lt;- NA
+    if (!is.na(steps))
+        filled &lt;- c(steps)
+    else
+        filled &lt;- (averages[averages$interval==interval, &quot;steps&quot;])
+    return(filled)
+}
+filled.data &lt;- data
+filled.data$steps &lt;- mapply(fill.value, filled.data$steps, filled.data$interval)
+</code></pre><p>Making a histogram of total steps taken each day and perform the  calculations of each one.</p>
+<pre><code class="lang-{r}">total.steps &lt;- tapply(filled.data$steps, filled.data$date, FUN=sum)
+qplot(total.steps, binwidth=1000, xlab=&quot;total number of steps taken each day&quot;)
+mean(total.steps)
+median(total.steps)
+</code></pre>
+<h2 id="are-there-differences-in-activity-patterns-between-weekdays-and-weekends-">Are there differences in activity patterns between weekdays and weekends?</h2>
+<pre><code class="lang-{r}">weekday.or.weekend &lt;- function(date) {
+    day &lt;- weekdays(date)
+    if (day %in% c(&quot;Monday&quot;, &quot;Tuesday&quot;, &quot;Wednesday&quot;, &quot;Thursday&quot;, &quot;Friday&quot;))
+        return(&quot;weekday&quot;)
+    else if (day %in% c(&quot;Saturday&quot;, &quot;Sunday&quot;))
+        return(&quot;weekend&quot;)
+    else
+        stop(&quot;invalid date&quot;)
+}
+filled.data$date &lt;- as.Date(filled.data$date)
+filled.data$day &lt;- sapply(filled.data$date, FUN=weekday.or.weekend)
+</code></pre>
+<p>Making a panel plot containing plots of average number of steps taken on weekdays and weekends.</p>
+<pre><code class="lang-{r}">averages &lt;- aggregate(steps ~ interval + day, data=filled.data, mean)
+ggplot(averages, aes(interval, steps)) + geom_line() + facet_grid(day ~ .) +
+    xlab(&quot;5-minute interval&quot;) + ylab(&quot;Number of steps&quot;)
+</code></pre>
+
+</body></html>
